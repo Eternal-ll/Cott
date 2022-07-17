@@ -1,0 +1,286 @@
+﻿@model Cott.Site.Infrastructure.Services.SkbTripsReportModel
+<script type="text/javascript" src="~/js/tableToExcel.js"></script>
+<style>
+    tbody, td, tfoot, th, thead, tr {
+        border-width: 1px;
+    }
+</style>
+<div class="d-print-none">
+    <div class="mb-3">
+        <div class="form-label">
+            Время выполнения: <b>@Model.Elapsed</b>
+        </div>
+    </div>
+    <div class="mb-3">
+        <div id="buttonResubmit" class="btn btn-primary">Повторить операцию</div>
+    </div>
+    <div class="mb-3">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    SQL запрос
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne">
+                <div class="accordion-body">
+                    <textarea class="form-control input-group-sm" rows=20 readonly>@Model.Query</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mb-3">
+        <div class="form-label">
+            Выгрузить как:
+        </div>
+        <div id="buttonExcel" class="btn btn-primary">Excel</div>
+        <div id="buttonExcel" class="btn btn-primary disabled">Word</div>
+        <div id="buttonPDF" class="btn btn-primary">PDF</div>
+    </div>
+</div>
+<div class="text-center d-none d-print-block">
+    <strong>Отчет</strong>
+    <br />
+    о количестве поездок держателей Социальной карты Башкортостана по единому социальному проездному билету
+    <br />
+    в электронной форме и сумме выпадающих доходов от их перевозки за @Model.Created.ToString("MMMM yyyy") г.
+    <br />
+    <br />
+</div>
+
+<table id="table" class="table table-light table-striped">
+    <thead>
+        <tr>
+            <th rowspan="3" style="text-align: center;vertical-align: middle;">№ пп</th>
+            <th rowspan="3" style="text-align: center;vertical-align: middle;">
+                Наименование транспортной организации
+            </th>
+            <th colspan="4" style="vertical-align: top;">Количество перевезенных держателей Социальной карты Башкортостана, человек</th>
+            <th colspan="4" style="vertical-align: top;">
+                Сумма выпадающих доходов, тыс. рублей
+            </th>
+        </tr>
+        <tr>
+            <th rowspan="2" style="text-align: center;vertical-align: middle;">Всего</th>
+            <th colspan="3">
+                в том числе по категориям граждан
+            </th>
+            <th rowspan="2" style="text-align: center;vertical-align: middle;">
+                Всего
+            </th>
+            <th colspan="3">
+                в том числе по категориям граждан
+            </th>
+        </tr>
+        <tr>
+            <td style="vertical-align: top;">
+                в отношении которых оказание мер социальной поддержки относится к ведению Российской Федерации
+            </td>
+            <td style="vertical-align: top;">
+                в отношении которых оказание мер социальной поддержки относится к ведению Республики Башкортостан
+            </td>
+            <td style="vertical-align: top;">
+                пенсионеров, не включенных в федеральный и региональный регистры
+            </td>
+            <td style="vertical-align: top;">
+                в отношении которых оказание мер социальной поддержки относится к ведению Российской Федерации
+            </td>
+            <td style="vertical-align: top;">
+                в отношении которых оказание мер социальной поддержки относится к ведению Республики Башкортостан
+            </td>
+            <td style="vertical-align: top;">
+                пенсионеров, не включенные в федеральный и региональный регистры
+            </td>
+        </tr>
+        <tr style="text-align: center;">
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
+            <td>7</td>
+            <td>8</td>
+            <td>9</td>
+            <td>10</td>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Data.Values)
+        {
+            var rowspan = item.Data.Any() ? 2 + item.Data.Count() : 1;
+            <tr>
+                <td rowspan=@rowspan>
+                    @item.Id
+                </td>
+                <td>
+                    @item.Title
+                </td>
+                <td style="text-align:right;">
+                    @item.TotalData.TransportedTotal
+                </td>
+                <td style="text-align:right;">
+                    @item.TotalData.TransportedBySupportOfRussianFederation
+                </td>
+                <td style="text-align:right;">
+                    @item.TotalData.TransportedBySupportOfRespublicBashkortostan
+                </td>
+                <td style="text-align:right;">
+                    @item.TotalData.TransportedByThemselves
+                </td>
+                <td style="text-align:right;">
+                    @((item.TotalData.IncomeTotal/1000).ToString("0,00"))
+                </td>
+                <td style="text-align:right;">
+                    @((item.TotalData.IncomeSupportedByRussianFederation/1000).ToString("0,00"))
+                </td>
+                <td style="text-align:right;">
+                    @((item.TotalData.IncomeSupportedByRespublicBashkortostan/1000).ToString("0,00"))
+                </td>
+                <td style="text-align:right;">
+                    @((item.TotalData.IncomeByThemselves/1000).ToString("0,00"))
+                </td>
+            </tr>
+            if (rowspan != 1)
+            {
+                <tr>
+                    <td>
+                        в том числе:
+                    </td>
+                    <td colspan="8"></td>
+                </tr>
+                @foreach (var data in item.Data.Values)
+                {
+                    var type = "";
+                    switch (data.CarriageClassId)
+                    {
+                        case 0:
+                            type = item.Id switch
+                            {
+                                1 => "Трамваи, троллейбусы",
+                                12 => "Автобусы",
+                                6 or 113 => "В городском сообщении",
+                                _ => "Неизвестная категория"
+                            };
+                            break;
+                        case 1:
+                            type = item.Id switch
+                            {
+                                1 => "Канатная дорога",
+                                12 => "Троллейбусы",
+                                6 or 113 => "В пригородном сообщении",
+                                _ => "Неизвестная категория"
+                            };
+                            break;
+                    };
+                    <tr>
+                        <td>
+                            @type
+                        </td>
+                        <td style="text-align:right;">
+                            @data.TransportedTotal
+                        </td>
+                        <td style="text-align:right;">
+                            @data.TransportedBySupportOfRussianFederation
+                        </td>
+                        <td style="text-align:right;">
+                            @data.TransportedBySupportOfRespublicBashkortostan
+                        </td>
+                        <td style="text-align:right;">
+                            @data.TransportedByThemselves
+                        </td>
+                        <td style="text-align:right;">
+                            @((data.IncomeTotal/1000).ToString("0,00"))
+                        </td>
+                        <td style="text-align:right;">
+                            @((data.IncomeSupportedByRussianFederation/1000).ToString("0,00"))
+                        </td>
+                        <td style="text-align:right;">
+                            @((data.IncomeSupportedByRespublicBashkortostan/1000).ToString("0,00"))
+                        </td>
+                        <td style="text-align:right;">
+                            @((data.IncomeByThemselves/1000).ToString("0,00"))
+                        </td>
+                    </tr>
+                }
+            }
+        }
+        <tr>
+            <td colspan=2>
+                <b>Итого:</b>
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.TransportedTotal
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.TransportedBySupportOfRussianFederation
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.TransportedBySupportOfRespublicBashkortostan
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.TransportedByThemselves
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.IncomeTotal
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.IncomeSupportedByRussianFederation
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.IncomeSupportedByRespublicBashkortostan
+            </td>
+            <td style="text-align:right;">
+                @Model.Total.IncomeByThemselves
+            </td>
+        </tr>
+    </tbody>
+</table>
+<div class="d-none d-print-block">
+    <div class="row">
+        <label class="col-4">
+            За генерального директора
+            <br />
+            по доверенности № 85-Ю от 01.04.2011г.
+            <br />
+            Заместитель директора
+        </label>
+        <div class="col-8 row text-center" style="border-top: 1px solid;margin-top: auto;">
+            <label class="col">
+                М.П. (подпись)
+            </label>
+            <label class="col">
+                (Ф.И.О.)
+            </label>
+        </div>
+    </div>
+    <div class="row" style="margin-top: 40px">
+        <label class="col-2 text-center" style="vertical-align: text-bottom">
+            Исполнитель
+            <br />
+            @Model.Created.ToString("dd.MM.yyyy")
+        </label>
+        <div class="col-10 row text-center" style="border-top: 1px solid;margin-top: auto;">
+            <div style="width: 21%"></div>
+            <label class="col">
+                (Ф.И.О.)
+            </label>
+            <label class="col">
+                (должность, телефон)
+            </label>
+            <div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+        document.getElementById("buttonExcel").addEventListener("click", function(event){
+          let table = document.getElementById("table");
+          TableToExcel.convert(table);
+        });
+        document.getElementById("buttonPDF").addEventListener("click", function(event){
+            window.print()
+        });
+        document.getElementById("buttonResubmit").addEventListener("click", function(event){
+            location.reload()
+        });
+</script>
